@@ -1,0 +1,225 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderType {
+  DINE_IN
+  TAKE_AWAY
+  DELIVERY
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  STAFF
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  DIGITAL_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String
+  email         String          @unique
+  phone         String?         @unique
+  password      String
+  role          UserRole        @default(CUSTOMER)
+  loyaltyPoints Int             @default(0)
+  stampCount    Int             @default(0)
+  dateOfBirth   DateTime?
+  isVerified    Boolean         @default(false)
+  isActive      Boolean         @default(true)
+  orders        Order[]
+  reservations  Reservation[]
+  reviews       Review[]
+  pointsHistory PointsHistory[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  menuItems   MenuItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([slug])
+}
+
+model MenuItem {
+  id              String      @id @default(cuid())
+  name            String
+  description     String
+  price           Float
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId      String
+  imageUrl        String
+  isAvailable     Boolean     @default(true)
+  isFeatured      Boolean     @default(false)
+  isSeasonal      Boolean     @default(false)
+  calories        Int?
+  preparationTime Int         @default(5)
+  customizations  Json?
+  orderItems      OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([isAvailable])
+  @@index([isFeatured])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  orderType       OrderType
+  status          OrderStatus @default(PENDING)
+  totalAmount     Float
+  discount        Float       @default(0)
+  finalAmount     Float
+  items           OrderItem[]
+  payment         Payment?
+  specialNote     String?
+  deliveryAddress String?
+  estimatedTime   Int?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id])
+  menuItemId    String
+  quantity      Int
+  unitPrice     Float
+  totalPrice    Float
+  customization Json?
+  createdAt     DateTime @default(now())
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String        @unique
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDING)
+  amount    Float
+  stripeId  String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([stripeId])
+}
+
+model Table {
+  id           String        @id @default(cuid())
+  tableNumber  Int           @unique
+  capacity     Int
+  isAvailable  Boolean       @default(true)
+  position     Json?
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([isAvailable])
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  table           Table             @relation(fields: [tableId], references: [id])
+  tableId         String
+  date            DateTime
+  time            String
+  guests          Int
+  status          ReservationStatus @default(CONFIRMED)
+  occasion        String?
+  specialRequests String?
+  reminderSent    Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([date])
+  @@index([status])
+}
+
+model PointsHistory {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  points      Int
+  type        String
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  rating    Int
+  comment   String
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
