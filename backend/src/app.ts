@@ -13,6 +13,10 @@ import router from './routes'
 
 const app = express()
 
+// CORS - Must be first
+app.use(cors(corsConfig))
+app.options('*', cors(corsConfig))
+
 // Security
 app.use(
   helmet({
@@ -20,9 +24,6 @@ app.use(
     contentSecurityPolicy: false,
   })
 )
-
-// CORS
-app.use(cors(corsConfig))
 
 // Logging
 app.use(morgan('dev'))
