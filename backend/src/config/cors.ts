@@ -3,6 +3,7 @@ import { env } from './env'
 
 const allowedOrigins = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:5173',
   'https://coffee-management-frontend.vercel.app',
   env.CLIENT_URL,
@@ -11,14 +12,11 @@ const allowedOrigins = [
 
 export const corsConfig: CorsOptions = {
   origin: (origin, callback) => {
-    // Allow Postman/mobile apps/no-origin requests
-    if (!origin) 
-      return callback(null, true)
-
-    if (allowedOrigins.includes(origin)) {
+    // Allow if no origin (Postman, mobile) or if in allowed list
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'))
+      callback(null, false)
     }
   },
 
