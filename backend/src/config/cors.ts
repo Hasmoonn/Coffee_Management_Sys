@@ -4,6 +4,7 @@ import { env } from './env'
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'https://coffee-management-frontend.vercel.app',
   env.CLIENT_URL,
   env.ADMIN_URL,
 ].filter(Boolean)
@@ -25,7 +26,7 @@ export const corsConfig: CorsOptions = {
 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
 
   maxAge: 86400,
 }
