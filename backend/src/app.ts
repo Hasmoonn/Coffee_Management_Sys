@@ -4,7 +4,6 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import path from 'path'
 
-import { corsConfig } from './config/cors'
 import { errorMiddleware } from './middleware/error.middleware'
 import { loggerMiddleware } from './middleware/logger.middleware'
 import { limiter } from './middleware/rateLimit.middleware'
@@ -13,21 +12,28 @@ import router from './routes'
 
 const app = express()
 
-// Final, foolproof CORS configuration for Vercel
-app.use(cors({
-  origin: (origin, callback) => {
-    // Reflect any origin to satisfy Credentials: true
-    callback(null, true);
-  },
+/* ── Trust Vercel proxy (needed for rate-limit to read real IPs) ── */
+app.set('trust proxy', 1)
+
+/* ── CORS — MUST be first, before anything else ── */
+const corsOptions: cors.CorsOptions = {
+  origin: (_origin, cb) => cb(null, true),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Api-Version'],
-  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
-}));
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'X-Api-Version',
+  ],
+  optionsSuccessStatus: 200,
+}
 
-app.options('*', cors()); // Enable pre-flight for all routes
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))   // <-- pass same options here too
 
-// Security headers
+/* ── Security ── */
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -35,30 +41,29 @@ app.use(
   })
 )
 
-// Logging
+/* ── Logging ── */
 app.use(morgan('dev'))
 app.use(loggerMiddleware)
 
-// Rate limiting
-app.use(limiter)
-
-// Body parser
+/* ── Body parsers (BEFORE rate limit so 429 isn’t served prematurely) ── */
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
-// Static uploads (development only)
+/* ── Rate limit — skip OPTIONS preflight ── */
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') return next()
+  return limiter(req, res, next)
+})
+
+/* ── Static uploads (dev only) ── */
 if (process.env.NODE_ENV !== 'production') {
-  app.use(
-    '/uploads',
-    express.static(path.join(process.cwd(), 'uploads'))
-  )
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')))
 }
 
-// API Routes
+/* ── Routes ── */
 app.use('/api', router)
 
-// Health check
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.json({
     success: true,
     message: 'API is running...',
@@ -66,15 +71,12 @@ app.get('/', (req, res) => {
   })
 })
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-  })
+/* ── 404 ── */
+app.use((_req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' })
 })
 
-// Error middleware
+/* ── Error handler ── */
 app.use(errorMiddleware)
 
 export default app

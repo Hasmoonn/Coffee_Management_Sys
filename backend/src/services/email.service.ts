@@ -1,6 +1,13 @@
-import { resend, emailFrom } from '../config/email'
+// src/services/email.service.ts
+import { getResend, emailFrom } from '../config/email'
 
 export const sendWelcomeEmail = async (email: string, name: string) => {
+  const resend = getResend()
+  if (!resend) {
+    console.log(`[email] Skipped welcome email to ${email} (Resend not configured)`)
+    return
+  }
+
   try {
     await resend.emails.send({
       from: emailFrom,
@@ -22,6 +29,12 @@ export const sendOrderConfirmationEmail = async (
   orderNumber: string,
   totalAmount: number
 ) => {
+  const resend = getResend()
+  if (!resend) {
+    console.log(`[email] Skipped order email to ${email} (Resend not configured)`)
+    return
+  }
+
   try {
     await resend.emails.send({
       from: emailFrom,
@@ -44,6 +57,12 @@ export const sendReservationConfirmationEmail = async (
   reservationDate: string,
   tableNumber: number
 ) => {
+  const resend = getResend()
+  if (!resend) {
+    console.log(`[email] Skipped reservation email to ${email} (Resend not configured)`)
+    return
+  }
+
   try {
     await resend.emails.send({
       from: emailFrom,
