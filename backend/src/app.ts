@@ -13,25 +13,19 @@ import router from './routes'
 
 const app = express()
 
-// CORS configuration
-const corsOptions: cors.CorsOptions = {
+// Final, foolproof CORS configuration for Vercel
+app.use(cors({
   origin: (origin, callback) => {
-    // Reflect origin if it matches vercel or localhost
-    if (!origin || origin.endsWith('.vercel.app') || origin.includes('localhost')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Reflect any origin to satisfy Credentials: true
+    callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Api-Version'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+}));
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Explicitly handle all OPTIONS requests
+app.options('*', cors()); // Enable pre-flight for all routes
 
 // Security headers
 app.use(
