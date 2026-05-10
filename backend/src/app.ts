@@ -13,6 +13,26 @@ import router from './routes'
 
 const app = express()
 
+// Manual CORS middleware for Vercel stability
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (origin.endsWith('.vercel.app') || origin.includes('localhost'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// Standard CORS middleware
+app.use(cors(corsConfig))
+
 // Security
 app.use(
   helmet({
@@ -20,9 +40,6 @@ app.use(
     contentSecurityPolicy: false,
   })
 )
-
-// CORS
-app.use(cors(corsConfig))
 
 // Logging
 app.use(morgan('dev'))
