@@ -30,7 +30,7 @@ A complete, production-ready REST API backend for a modern coffee shop managemen
 1. **Clone the repository**
 ```bash
 git clone <repository-url>
-cd brew-co-backend
+cd backend
 ```
 
 2. **Install dependencies**
