@@ -21,7 +21,7 @@ export const createMenuItemValidator = [
   body('calories')
     .optional()
     .isInt({ min: 0 })
-    .withMessage('Calories must be a positive number'),
+    .withMessage('Calories must be a non-negative number'),
   body('preparationTime')
     .optional()
     .isInt({ min: 1 })
@@ -41,7 +41,12 @@ export const updateMenuItemValidator = [
     .optional()
     .isFloat({ min: 0.01 })
     .withMessage('Price must be greater than 0'),
-  body('categoryId')
+  body('calories')
     .optional()
-    .trim(),
+    .isInt({ min: 0 })
+    .withMessage('Calories must be a non-negative number'),
+  body('preparationTime')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Preparation time must be at least 1 minute'),
 ]

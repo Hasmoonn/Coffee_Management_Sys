@@ -1,8 +1,9 @@
 import app from './src/app'
 import { env } from './src/config/env'
 import { prisma } from './src/config/database'
+// Triggering restart after killing ghost process
 
-const PORT = env.PORT || 5000
+const PORT = env.PORT || 4000
 
 const server = app.listen(PORT, () => {
   console.log(`
