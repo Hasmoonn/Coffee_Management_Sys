@@ -13,10 +13,10 @@ export const adminMiddleware = (
     return
   }
 
-  if (req.user.role !== 'ADMIN') {
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'STAFF') {
     res
       .status(403)
-      .json(new ApiResponse(403, null, 'Forbidden - Admin access required'))
+      .json(new ApiResponse(403, null, 'Forbidden - Staff or Admin access required'))
     return
   }
 

@@ -9,6 +9,7 @@ import reviewRoutes from './review.routes'
 import paymentRoutes from './payment.routes'
 import analyticsRoutes from './analytics.routes'
 import adminRoutes from './admin.routes'
+import categoryRoutes from './category.routes'
 
 const router = Router()
 
@@ -28,5 +29,6 @@ router.use('/reviews', reviewRoutes)
 router.use('/payments', paymentRoutes)
 router.use('/analytics', analyticsRoutes)
 router.use('/admin', adminRoutes)
+router.use('/categories', categoryRoutes)
 
 export default router

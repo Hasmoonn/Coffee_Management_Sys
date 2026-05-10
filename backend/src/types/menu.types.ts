@@ -6,6 +6,8 @@ export interface MenuItemCreateInput {
   imageUrl?: string
   calories?: number
   preparationTime?: number
+  isAvailable?: boolean
+  isFeatured?: boolean
   customizations?: Record<string, any>
 }
 
@@ -17,5 +19,7 @@ export interface MenuItemUpdateInput {
   imageUrl?: string
   calories?: number
   preparationTime?: number
+  isAvailable?: boolean
+  isFeatured?: boolean
   customizations?: Record<string, any>
 }
