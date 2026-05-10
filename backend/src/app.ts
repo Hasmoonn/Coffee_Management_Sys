@@ -13,7 +13,7 @@ import router from './routes'
 
 const app = express()
 
-// Manual CORS middleware for Vercel stability
+// CORS and Security
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin && (origin.endsWith('.vercel.app') || origin.includes('localhost'))) {
@@ -23,7 +23,6 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -31,10 +30,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Standard CORS middleware
-app.use(cors(corsConfig))
-
-// Security
+// Security headers
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
