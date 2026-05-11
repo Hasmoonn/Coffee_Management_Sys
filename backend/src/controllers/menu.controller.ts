@@ -2,6 +2,8 @@ import { Request, Response } from 'express'
 import { asyncHandler } from '../utils/asyncHandler'
 import { ApiResponse } from '../utils/apiResponse'
 import * as menuService from '../services/menu.service'
+import { uploadToCloudinary } from '../utils/cloudinary'
+
 
 export const getAllMenuItems = asyncHandler(
   async (req: Request, res: Response) => {
@@ -52,7 +54,11 @@ export const createMenuItem = asyncHandler(
       preparationTime,
       customizations,
     } = req.body
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : ''
+    let imageUrl = ''
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file)
+    }
+
 
     const item = await menuService.createMenuItem({
       name,
@@ -77,8 +83,9 @@ export const updateMenuItem = asyncHandler(
     const updateData: any = { ...req.body }
     
     if (req.file) {
-      updateData.imageUrl = `/uploads/${req.file.filename}`
+      updateData.imageUrl = await uploadToCloudinary(req.file)
     }
+
 
     // Parse numeric and boolean fields if they exist
     if (updateData.price) updateData.price = parseFloat(updateData.price)
