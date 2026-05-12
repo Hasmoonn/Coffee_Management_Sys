@@ -9,14 +9,33 @@ export const createOrder = async (userId: string, data: OrderCreateInput) => {
   let totalAmount = 0
   const orderItems = []
 
+  // Fetch all menu items in a single query (instead of N+1)
+  const menuItemIds = data.items.map((item) => item.menuItemId)
+  const menuItems = await prisma.menuItem.findMany({
+    where: {
+      id: {
+        in: menuItemIds,
+      },
+    },
+    select: {
+      id: true,
+      price: true,
+      isAvailable: true,
+    },
+  })
+
+  const menuItemMap = new Map(menuItems.map((item) => [item.id, item]))
+
   // Validate and calculate total
   for (const item of data.items) {
-    const menuItem = await prisma.menuItem.findUnique({
-      where: { id: item.menuItemId },
-    })
+    const menuItem = menuItemMap.get(item.menuItemId)
 
     if (!menuItem) {
       throw new Error(`Menu item ${item.menuItemId} not found`)
+    }
+
+    if (!menuItem.isAvailable) {
+      throw new Error(`Menu item ${item.menuItemId} is not available`)
     }
 
     const itemTotal = menuItem.price * item.quantity
@@ -88,20 +107,46 @@ export const getUserOrders = async (userId: string, query: any = {}) => {
   const limit = parseInt(query.limit) || 10
   const skip = (page - 1) * limit
 
-  const orders = await prisma.order.findMany({
-    where: { userId },
-    skip,
-    take: limit,
-    include: {
-      items: {
-        include: { menuItem: true },
+  // Batch queries for better performance
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where: { userId },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        orderNumber: true,
+        orderType: true,
+        status: true,
+        totalAmount: true,
+        finalAmount: true,
+        createdAt: true,
+        items: {
+          select: {
+            quantity: true,
+            unitPrice: true,
+            totalPrice: true,
+            menuItem: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+                isAvailable: true,
+              },
+            },
+          },
+        },
+        payment: {
+          select: {
+            status: true,
+            method: true,
+          },
+        },
       },
-      payment: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  const total = await prisma.order.count({ where: { userId } })
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.order.count({ where: { userId } }),
+  ])
 
   return {
     data: orders,

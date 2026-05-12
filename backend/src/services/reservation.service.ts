@@ -112,13 +112,26 @@ export const getTableAvailability = async (query: any) => {
       capacity: { gte: guests },
       isAvailable: true,
     },
-    include: {
+    select: {
+      id: true,
+      tableNumber: true,
+      capacity: true,
+      isAvailable: true,
+      position: true,
+      createdAt: true,
       reservations: {
         where: {
           date: {
             gte: new Date(date),
             lt: new Date(new Date(date).getTime() + 24 * 60 * 60 * 1000),
           },
+        },
+        select: {
+          id: true,
+          date: true,
+          time: true,
+          guests: true,
+          status: true,
         },
       },
     },

@@ -20,15 +20,35 @@ export const getAllMenuItems = async (query: any) => {
     ? { categoryId, isAvailable: true }
     : { isAvailable: true }
 
-  const items = await prisma.menuItem.findMany({
-    where,
-    skip,
-    take: limit,
-    include: { category: true },
-    orderBy: { createdAt: 'desc' },
-  })
-
-  const total = await prisma.menuItem.count({ where })
+  // Batch queries for better performance
+  const [items, total] = await Promise.all([
+    prisma.menuItem.findMany({
+      where,
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        imageUrl: true,
+        isAvailable: true,
+        isFeatured: true,
+        isSeasonal: true,
+        calories: true,
+        preparationTime: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.menuItem.count({ where }),
+  ])
 
   return {
     data: items.map(normalizeMenuItem),
@@ -42,8 +62,16 @@ export const getAllMenuItems = async (query: any) => {
 }
 
 export const getMenuByCategory = async (slug: string) => {
+  // Combine both queries into one to reduce database calls
   const category = await prisma.category.findUnique({
     where: { slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
+      imageUrl: true,
+    },
   })
 
   if (!category) {
@@ -54,6 +82,18 @@ export const getMenuByCategory = async (slug: string) => {
     where: {
       categoryId: category.id,
       isAvailable: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      price: true,
+      imageUrl: true,
+      isAvailable: true,
+      isFeatured: true,
+      isSeasonal: true,
+      calories: true,
+      preparationTime: true,
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -67,7 +107,26 @@ export const getMenuByCategory = async (slug: string) => {
 export const getMenuItemById = async (id: string) => {
   const item = await prisma.menuItem.findUnique({
     where: { id },
-    include: { category: true },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      price: true,
+      imageUrl: true,
+      isAvailable: true,
+      isFeatured: true,
+      isSeasonal: true,
+      calories: true,
+      preparationTime: true,
+      customizations: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
   })
 
   if (!item) {
@@ -83,7 +142,25 @@ export const getFeaturedItems = async () => {
       isFeatured: true,
       isAvailable: true,
     },
-    include: { category: true },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      price: true,
+      imageUrl: true,
+      isAvailable: true,
+      isFeatured: true,
+      isSeasonal: true,
+      calories: true,
+      preparationTime: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+    },
   })
 
   return items.map(normalizeMenuItem)

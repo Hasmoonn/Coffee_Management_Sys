@@ -2,11 +2,13 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import compression from 'compression'
 import path from 'path'
 
 import { errorMiddleware } from './middleware/error.middleware'
 import { loggerMiddleware } from './middleware/logger.middleware'
 import { limiter } from './middleware/rateLimit.middleware'
+import { cacheMiddleware, lastModifiedMiddleware } from './middleware/cache.middleware'
 
 import router from './routes'
 
@@ -41,19 +43,27 @@ app.use(
   })
 )
 
+/* ── Compression (must be before routes) ── */
+app.use(compression())
+
 /* ── Logging ── */
-app.use(morgan('dev'))
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(loggerMiddleware)
 
 /* ── Body parsers (BEFORE rate limit so 429 isn’t served prematurely) ── */
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
-
+/* ── ETag for caching ── */
+app.set('etag', 'weak')
 /* ── Rate limit — skip OPTIONS preflight ── */
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return next()
   return limiter(req, res, next)
 })
+
+/* ── Caching headers ── */
+app.use(cacheMiddleware)
+app.use(lastModifiedMiddleware)
 
 /* ── Static uploads (dev only) ── */
 if (process.env.NODE_ENV !== 'production') {
